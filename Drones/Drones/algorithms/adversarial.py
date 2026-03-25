@@ -93,7 +93,6 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         # TODO: Implement your code here (BONUS)
         return None
 
-
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
     Expectimax agent with a mixed hunter model.
@@ -123,5 +122,52 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         - Do NOT prune in expectimax (unlike alpha-beta).
         - self.prob is set via the constructor argument prob.
         """
-        # TODO: Implement your code here
-        return None
+
+        def expectimax(estado, profundidad, indice_agente):
+            if estado.is_terminal() or profundidad == self.depth:
+                return self.evaluation_function(estado)
+
+            numero_agentes = estado.get_num_agents()
+
+            if indice_agente == 0:
+                valores = []
+                for accion in estado.get_legal_actions(0):
+                    sucesor = estado.generate_successor(0, accion)
+                    valores.append(expectimax(sucesor, profundidad, 1))
+                return max(valores) if valores else self.evaluation_function(estado)
+            else:
+                acciones = estado.get_legal_actions(indice_agente)
+                if not acciones:
+                    return self.evaluation_function(estado)
+
+                valores = []
+                for accion in acciones:
+                    sucesor = estado.generate_successor(indice_agente, accion)
+
+                    siguiente_agente = indice_agente + 1
+                    if siguiente_agente == numero_agentes:
+                        siguiente_agente = 0
+                        siguiente_profundidad = profundidad + 1
+                    else:
+                        siguiente_profundidad = profundidad
+
+                    valores.append(expectimax(sucesor, siguiente_profundidad, siguiente_agente))
+
+                p = self.prob
+                valor_minimo = min(valores)
+                valor_promedio = sum(valores) / len(valores)
+
+                return (1 - p) * valor_minimo + p * valor_promedio
+
+        mejor_valor = float('-inf')
+        mejor_accion = None
+
+        for accion in state.get_legal_actions(0):
+            sucesor = state.generate_successor(0, accion)
+            valor = expectimax(sucesor, 0, 1)
+
+            if valor > mejor_valor:
+                mejor_valor = valor
+                mejor_accion = accion
+
+        return mejor_accion
