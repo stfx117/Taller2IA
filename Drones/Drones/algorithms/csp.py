@@ -122,23 +122,7 @@ def backtracking_ac3(csp):
         return None
 
     return backtrack({}, domains)   
- 
-def ac3(csp, domains, queue=None):
-    if queue is None:
-        queue = deque()
-        for xi in csp.variables:
-            for xj in csp.neighbors[xi]:
-                queue.append((xi, xj))
 
-    while queue:
-        xi, xj = queue.popleft()
-        if revise(csp, domains, xi, xj):
-            if len(domains[xi]) == 0:
-                return False
-            for xk in csp.neighbors[xi]:
-                if xk != xj:
-                    queue.append((xk, xi))
-    return True
   
 def values_compatible(csp, var_i, val_i, var_j, val_j):
     temp = {var_i: val_i}
