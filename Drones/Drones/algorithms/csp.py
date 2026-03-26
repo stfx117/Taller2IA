@@ -27,8 +27,26 @@ def backtracking_search(csp: DroneAssignmentCSP) -> dict[str, str] | None:
     You can find inspiration in the textbook's pseudocode:
     Artificial Intelligence: A Modern Approach (4th Edition) by Russell and Norvig, Chapter 5: Constraint Satisfaction Problems
     """
-    # TODO: Implement your code here
-    return None
+    return backtracking(csp, {})
+  
+def backtracking(csp: DroneAssignmentCSP, assignment: dict):
+  if csp.is_complete(assignment):
+    return assignment
+
+  var = csp.get_unassigned_variables(assignment)[0]
+  
+  for value in csp.domains[var]:
+    
+    if csp.is_consistent(var, value, assignment):
+      csp.assign(var, value, assignment)
+      result = backtracking(csp, assignment)
+      
+      if result != None:
+        return result
+      
+      csp.unassign(var, assignment)
+    
+  return None
 
 
 def backtracking_fc(csp: DroneAssignmentCSP) -> dict[str, str] | None:
@@ -43,8 +61,48 @@ def backtracking_fc(csp: DroneAssignmentCSP) -> dict[str, str] | None:
     - Use csp.is_consistent(neighbor, val, assignment) to check if a value is still consistent.
     - Forward checking reduces the search space by detecting failures earlier than basic backtracking.
     """
-    # TODO: Implement your code here
-    return None
+    return backtracking_inference(csp, {})
+  
+def backtracking_inference(csp: DroneAssignmentCSP, assignment: dict):
+  if csp.is_complete(assignment):
+    return assignment
+  
+  var = csp.get_unassigned_variables(assignment)[0]
+  
+  for value in csp.domains[var]:
+    
+    if csp.is_consistent(var, value, assignment):
+      csp.assign(var,value, assignment)
+      
+      domains_backup = {}
+      for v in csp.domains:
+        domains_backup[v] = csp.domains[v].copy()
+      
+      failure = False
+      neighbors = csp.get_neighbors(var)
+      
+      for neighbor in neighbors:
+        if neighbor not in assignment:
+          domain = csp.domains[neighbor]
+
+          for d in domain.copy():
+            if not csp.is_consistent(neighbor, d, assignment):
+              domain.remove(d)
+
+          if len(domain) == 0:
+            failure = True
+            break
+
+      if not failure:
+                result = backtracking_inference(csp, assignment)
+                if result is not None:
+                    return result
+
+      csp.domains = domains_backup
+
+      csp.unassign(var, assignment)
+
+  return None
  
 def backtracking_ac3(csp):
     """
@@ -155,4 +213,112 @@ def backtracking_mrv_lcv(csp: DroneAssignmentCSP) -> dict[str, str] | None:
     - Use csp.get_num_conflicts(var, value, assignment) to count how many values would be ruled out for neighbors if var=value is assigned.
     """
     # TODO: Implement your code here (BONUS)
-    return None
+
+    domains = copy.deepcopy(csp.domains)
+
+    def select_variable(assignment, domains):
+
+      no_asignadas = []
+
+      for v in csp.variables:
+          if v not in assignment:
+              no_asignadas.append(v)
+
+      min_d = float("inf")
+
+      for v in no_asignadas:
+          tam = len(domains[v])
+          if tam < min_d:
+              min_d = tam
+
+      candidatos = []
+
+      for v in no_asignadas:
+          if len(domains[v]) == min_d:
+              candidatos.append(v)
+
+      mejor = None
+      max_grado = -1
+
+      for v in candidatos:
+
+          grado = 0
+
+          for n in csp.neighbors[v]:
+              if n not in assignment:
+                  grado += 1
+
+          if grado > max_grado:
+              max_grado = grado
+              mejor = v
+
+      return mejor
+
+    def order_values(var, domains, assignment):
+
+      valores = domains[var]
+      lista = []
+
+      for val in valores:
+          conflictos = csp.get_num_conflicts(var, val, assignment)
+          lista.append((val, conflictos))
+
+      for i in range(len(lista)):
+          for j in range(i + 1, len(lista)):
+              if lista[j][1] < lista[i][1]:
+                  temp = lista[i]
+                  lista[i] = lista[j]
+                  lista[j] = temp
+
+      ordenados = []
+
+      for par in lista:
+          ordenados.append(par[0])
+
+      return ordenados
+    
+    
+    def forward_check(var, value, domains, assignment):
+        new_domains = copy.deepcopy(domains)
+
+        for neighbor in csp.neighbors[var]:
+            if neighbor not in assignment:
+
+                for val in list(new_domains[neighbor]):
+                    temp = assignment.copy()
+                    temp[var] = value
+
+                    if not csp.is_consistent(neighbor, val, temp):
+                        new_domains[neighbor].remove(val)
+
+                # si queda vacío → falla
+                if len(new_domains[neighbor]) == 0:
+                    return None
+
+        return new_domains
+
+    def backtrack(assignment, domains):
+
+        if len(assignment) == len(csp.variables):
+            return assignment
+
+        var = select_variable(assignment, domains)
+
+        for value in order_values(var, domains, assignment):
+
+            if csp.is_consistent(var, value, assignment):
+
+                new_assignment = assignment.copy()
+                new_assignment[var] = value
+
+                new_domains = forward_check(var, value, domains, new_assignment)
+
+                if new_domains is not None:
+                    result = backtrack(new_assignment, new_domains)
+
+                    if result is not None:
+                        return result
+
+        return None
+
+    return backtrack({}, domains)
