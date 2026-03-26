@@ -56,6 +56,7 @@ def evaluation_function(state: GameState) -> float:
     
     evaluacion_final = score
     
+    evaluacion_final -= 100*len(entregas_pend)
     if entregas_pend:
       dist_entregas = []
       # DISTANCIA A PUNTOS DE ENTREGA MÁS CERCANO
@@ -64,13 +65,13 @@ def evaluation_function(state: GameState) -> float:
         dist_entregas.append(dist)
 
       min_dist_entrega = min(dist_entregas)
-      evaluacion_final += 10/ (min_dist_entrega +1)
+      evaluacion_final += 20/ (min_dist_entrega +1)
       
       for cazador in pos_caz:
         dist__cazador = bfs_distance(layout,cazador, pos_dron, hunter_restricted=True)
       
-      if dist__cazador < 3:
-        evaluacion_final -= 100 / dist__cazador
+      if dist__cazador < 2:
+        evaluacion_final -= 200 / dist__cazador
       
       evaluacion_final -= 20 * len(entregas_pend)
     return max(min(evaluacion_final, 1000), -1000)
