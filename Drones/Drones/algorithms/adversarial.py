@@ -129,7 +129,67 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         - Pass alpha and beta through the recursive calls.
         """
         # TODO: Implement your code here (BONUS)
-        return None
+        actions = state.get_legal_actions(0)
+        if not actions:
+            return None
+
+        alpha = float("-inf")
+        beta = float("inf")
+        
+        mejor_valor = float("-inf")
+        mejor_accion = None
+
+        for accion in actions:
+            sucesor = state.generate_successor(0, accion)
+            
+            valor = self.alfabeta(sucesor, 1, self.depth, alpha, beta)
+            
+            if valor > mejor_valor:
+                mejor_valor = valor
+                mejor_accion = accion
+            
+            
+            alpha = max(alpha, mejor_valor)
+            
+        return mejor_accion
+    
+    def alfabeta(self, state: GameState, agent_index, depth, alpha, beta):
+        if state.is_win() or state.is_lose() or depth == 0:
+            return self.evaluation_function(state)
+        cant_agnts = state.get_num_agents()
+        
+        acciones = state.get_legal_actions(agent_index)
+        if not acciones:
+            return self.evaluation_function(state)
+        
+        next_agent = (agent_index+1) % cant_agnts
+        next_depth = depth
+        if next_agent == 0:
+            next_depth = depth-1
+        if agent_index == 0:
+            v = float("-inf")
+            for accion in acciones:
+                sucesor = state.generate_successor(agent_index, accion)
+                v = max(v, self.alfabeta(sucesor, next_agent, next_depth, alpha, beta))
+                
+                if v > beta:
+                    return v
+                #update alpha
+                alpha = max(alpha, v)
+            return v
+        else:  
+            #turno de cazadores
+            v = float("inf")
+            for accion in acciones:
+                sucesor = state.generate_successor(agent_index, accion)
+                v = min(v, self.alfabeta(sucesor, next_agent, next_depth, alpha, beta))
+                
+                
+                if v < alpha:
+                    return v
+                # update beta
+                beta = min(beta, v)
+            return v
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
