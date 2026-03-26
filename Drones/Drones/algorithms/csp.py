@@ -27,8 +27,26 @@ def backtracking_search(csp: DroneAssignmentCSP) -> dict[str, str] | None:
     You can find inspiration in the textbook's pseudocode:
     Artificial Intelligence: A Modern Approach (4th Edition) by Russell and Norvig, Chapter 5: Constraint Satisfaction Problems
     """
-    # TODO: Implement your code here
-    return None
+    return backtracking(csp, {})
+  
+def backtracking(csp: DroneAssignmentCSP, assignment: dict):
+  if csp.is_complete(assignment):
+    return assignment
+
+  var = csp.get_unassigned_variables(assignment)[0]
+  
+  for value in csp.domains[var]:
+    
+    if csp.is_consistent(var, value, assignment):
+      csp.assign(var, value, assignment)
+      result = backtracking(csp, assignment)
+      
+      if result != None:
+        return result
+      
+      csp.unassign(var, assignment)
+    
+  return None
 
 
 def backtracking_fc(csp: DroneAssignmentCSP) -> dict[str, str] | None:
@@ -43,8 +61,48 @@ def backtracking_fc(csp: DroneAssignmentCSP) -> dict[str, str] | None:
     - Use csp.is_consistent(neighbor, val, assignment) to check if a value is still consistent.
     - Forward checking reduces the search space by detecting failures earlier than basic backtracking.
     """
-    # TODO: Implement your code here
-    return None
+    return backtracking_inference(csp, {})
+  
+def backtracking_inference(csp: DroneAssignmentCSP, assignment: dict):
+  if csp.is_complete(assignment):
+    return assignment
+  
+  var = csp.get_unassigned_variables(assignment)[0]
+  
+  for value in csp.domains[var]:
+    
+    if csp.is_consistent(var, value, assignment):
+      csp.assign(var,value, assignment)
+      
+      domains_backup = {}
+      for v in csp.domains:
+        domains_backup[v] = csp.domains[v].copy()
+      
+      failure = False
+      neighbors = csp.get_neighbors(var)
+      
+      for neighbor in neighbors:
+        if neighbor not in assignment:
+          domain = csp.domains[neighbor]
+
+          for d in domain.copy():
+            if not csp.is_consistent(neighbor, d, assignment):
+              domain.remove(d)
+
+          if len(domain) == 0:
+            failure = True
+            break
+
+      if not failure:
+                result = backtracking_inference(csp, assignment)
+                if result is not None:
+                    return result
+
+      csp.domains = domains_backup
+
+      csp.unassign(var, assignment)
+
+  return None
  
 def backtracking_ac3(csp):
     """
