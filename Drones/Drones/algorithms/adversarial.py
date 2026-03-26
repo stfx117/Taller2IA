@@ -49,7 +49,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
     Minimax agent for the drone (MAX) vs hunters (MIN) game.
     """
-
+    
     def get_action(self, state: GameState) -> Directions | None:
         """
         Returns the best action for the drone using minimax.
@@ -66,9 +66,47 @@ class MinimaxAgent(MultiAgentSearchAgent):
         - Return the ACTION (not the value) that maximizes the minimax value for the drone.
         """
         # TODO: Implement your code here
-        return None
+        actions = state.get_legal_actions(0)
+        mejor_action = max(actions, key=lambda a: self.minimax(state.generate_successor(0,a),1, self.depth))
+        return mejor_action
 
+    def minimax(self, state: GameState, agent_index, depth):
+        if state.is_win() or state.is_lose() or depth == 0:
+            return self.evaluation_function(state)
+        
+        num_agents = state.get_num_agents()
+        actions = state.get_legal_actions(agent_index)
+        if not actions: 
+            return self.evaluation_function(state)
+        
+        next_agent = (agent_index +1) % num_agents
+        next_depth = depth
+        if next_agent == 0:
+            next_depth = depth-1
 
+        if agent_index ==0:
+            valor_mas_alto = float("-inf")
+            
+            for accion in actions:
+                sucesor = state.generate_successor(agent_index, accion)
+                
+                costo = self.minimax(sucesor, next_agent, next_depth)
+                
+                if costo > valor_mas_alto:
+                    valor_mas_alto = costo
+            return valor_mas_alto
+        
+        else:
+            valor_mas_bajo = float("inf")
+            
+            for accion in actions:
+                sucesor = state.generate_successor(agent_index, accion)
+                costo = self.minimax(sucesor, next_agent, next_depth)
+                
+                if costo < valor_mas_bajo:
+                    valor_mas_bajo = costo
+            return valor_mas_bajo
+        
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Alpha-Beta pruning agent. Same as Minimax but with alpha-beta pruning.
