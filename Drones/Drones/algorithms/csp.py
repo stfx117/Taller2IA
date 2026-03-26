@@ -63,45 +63,66 @@ def backtracking_ac3(csp):
       - a backtrack function that integrates AC-3 into the search process.
     """
     # TODO: Implement your code here
-    
-    # Copia inicial de dominios
+
     domains = copy.deepcopy(csp.domains)
 
-    # Preprocesamiento con AC-3
-    if not ac3(csp, domains):
+    def ac3(domains, queue):
+        while queue:
+            xi, xj = queue.popleft()
+
+            if revise(csp, domains, xi, xj):
+                if len(domains[xi]) == 0:
+                    return False
+
+                for xk in csp.neighbors[xi]:
+                    if xk != xj:
+                        queue.append((xk, xi))
+        return True
+
+    queue = deque()
+    for xi in csp.variables:
+        for xj in csp.neighbors[xi]:
+            queue.append((xi, xj))
+
+    if not ac3(domains, queue):
         return None
 
     def backtrack(assignment, domains):
-        
-        # Si ya asignamos todo
+
         if len(assignment) == len(csp.variables):
             return assignment
 
-        # Selección simple (puedes mejorar luego con MRV)
-        var = next(v for v in csp.variables if v not in assignment)
+        # escoger primera no asignada
+        for v in csp.variables:
+            if v not in assignment:
+                var = v
+                break
 
         for value in domains[var]:
+
             if csp.is_consistent(var, value, assignment):
-                
-                # Crear copias
+
                 new_assignment = assignment.copy()
                 new_assignment[var] = value
 
                 new_domains = copy.deepcopy(domains)
                 new_domains[var] = [value]
 
-                # Solo arcos relevantes
-                queue = [(neighbor, var) for neighbor in csp.neighbors[var]]
+                # cola solo con vecinos
+                queue = deque()
+                for neighbor in csp.neighbors[var]:
+                    queue.append((neighbor, var))
 
-                if ac3(csp, new_domains, queue):
+                if ac3(new_domains, queue):
                     result = backtrack(new_assignment, new_domains)
+
                     if result is not None:
                         return result
 
         return None
 
-    return backtrack({}, domains)
-
+    return backtrack({}, domains)   
+ 
 def ac3(csp, domains, queue=None):
     if queue is None:
         queue = deque()
